@@ -1,0 +1,163 @@
+--  format = string
+SELECT '2023-02-19';
+-- cast using :: to extract dates
+-- :: to convert, can also do integer, boolean, real
+SELECT '2023-02-19' :: DATE;
+
+
+-- EXAMPLE with time stamp
+SELECT 
+    job_title_short AS title,
+    job_location AS location,
+    job_posted_date AS dates
+FROM
+    job_postings_fact;
+
+-- IF only needs 'date'
+SELECT 
+    job_title_short AS title,
+    job_location AS location,
+    job_posted_date:: DATE AS dates
+FROM
+    job_postings_fact;
+
+/* convert timestamp to different 'time zone' (include +/-)
+IF HAS: 
+SELECT 
+    column_name AT TIME ZONE 'EST' AS dates
+FROM
+    job_postings_fact;
+*/
+
+-- HERE, do NOT have time zone information
+-- specify - using AT TIME ZONE twice (now, new)
+-- know that these values are 'UTC'
+SELECT 
+    job_title_short AS title,
+    job_location AS location,
+    job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST' AS dates
+FROM
+    job_postings_fact
+LIMIT 5;
+
+-- EXTRACT out of dates 
+-- FUCNTION: EXTRACT(year/ month/ day FROM col_name)
+
+-- example
+SELECT 
+    job_title_short AS title,
+    job_location AS location,
+    job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST' AS dates,
+    EXTRACT(MONTH FROM job_posted_date) AS month,
+    EXTRACT(YEAR FROM job_posted_date) AS year
+FROM
+    job_postings_fact
+LIMIT 5;
+
+-- useful for trend analysis
+-- EXAMPLE: count of job openings for data analyst for 'each month'
+SELECT 
+    COUNT(job_id) AS job_count,
+    EXTRACT(MONTH FROM job_posted_date) AS month
+FROM
+    job_postings_fact
+WHERE
+    job_title_short = 'Data Analyst'
+GROUP BY 
+    month
+ORDER BY
+    job_count DESC;
+
+-- EXAMPLE: avg salary both yearly and hourly for job postings that were posted after June 1, 2023. Group the results by job_scedule type
+SELECT 
+    job_schedule_type AS type,
+    ROUND(AVG(salary_year_avg),2) AS avg_yearly_salary,
+    ROUND(AVG(salary_hour_avg),2) AS avg_hourly_salary
+FROM job_postings_fact
+WHERE job_posted_date > '2023-06-01':: DATE
+GROUP BY type
+ORDER BY avg_yearly_salary ASC;
+
+-- EXAMPLE: count the # of postings for each month in 2023, change to American/new york time zone, group and order by month
+SELECT 
+    EXTRACT(MONTH FROM job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST') AS month,
+    COUNT(job_id) AS num_jobs
+FROM job_postings_fact
+WHERE EXTRACT(YEAR FROM job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST') = '2023'
+GROUP BY month
+ORDER BY month ASC
+;
+
+-- EXAMPLE: find companies that posted jobs with health insurance, where posting is in second quarter of 2023
+SELECT
+    company_dim.name AS company_name,
+    EXTRACT(QUARTER FROM job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST') AS quarter,
+    COUNT(job_postings_fact.job_id) AS num_jobs
+FROM job_postings_fact
+LEFT JOIN company_dim ON
+    job_postings_fact.company_id = company_dim.company_id
+WHERE 
+    EXTRACT(QUARTER FROM job_posted_date AT TIME ZONE 'UTC' AT TIME ZONE 'EST') = 2 AND
+    job_health_insurance = '1'
+GROUP BY 
+    company_name,
+    quarter
+ORDER BY
+    company_name
+;
+
+
+-- PRACTICE PROBLEM
+-- EXAMPLE: want month as its own 'TABLE' - create table using 'EXTRACT'
+-- when repetitive: use ChatGPT to advantage: type repeat this query for all months & make sure they are right syntax
+-- in this case, just 3 months - once run, hit refresh to check
+
+-- Creating a table for January jobs
+CREATE TABLE january_jobs AS
+    SELECT *
+    FROM job_postings_fact
+    WHERE EXTRACT(MONTH FROM job_posted_date) = 1;
+
+-- Creating a table for February jobs
+CREATE TABLE february_jobs AS
+    SELECT *
+    FROM job_postings_fact
+    WHERE EXTRACT(MONTH FROM job_posted_date) = 2;
+
+-- Creating a table for March jobs
+CREATE TABLE march_jobs AS
+    SELECT *
+    FROM job_postings_fact
+    WHERE EXTRACT(MONTH FROM job_posted_date) = 3;
+
+-- test - pass
+SELECT job_posted_date
+FROM march_jobs;
+
+/*notes: these tables are permanent tables - has to drop table*/
+
+-- IF want temporary results "subqueries/ CTEs" instead
+
+-- subqueries -> query within query
+-- can do select/from/where/having clauses
+-- inside () is executed first
+SELECT *
+FROM ( -- subqueries start here
+    SELECT *
+    FROM job_postings_fact
+    WHERE EXTRACT(MONTH FROM job_posted_date) = 1
+    )
+    AS january_jobs; -- ends here
+
+-- CTEs: common table expression
+-- use WITH
+-- within () -> can do select/insert/update/delete statement
+WITH january_jobs AS ( -- CTE starts 
+    SELECT *
+    FROM job_postings_fact
+    WHERE EXTRACT(MONTH FROM job_posted_date) = 1
+    )   
+
+SELECT *
+FROM january_jobs;
+

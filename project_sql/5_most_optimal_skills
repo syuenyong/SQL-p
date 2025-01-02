@@ -1,0 +1,75 @@
+/*
+QUESTION: most optimal skills to learn ? high demeand + high paying
+-- thailand with specified salary range
+*/
+
+--- use CTEs, build result sets
+-- in thailand
+WITH skills_demand AS (
+    SELECT
+        skills_dim.skill_id,
+        skills_dim.skills,
+        COUNT(skills_job_dim.job_id) AS num_jobs
+    FROM
+        job_postings_fact
+    INNER JOIN skills_job_dim ON
+        job_postings_fact.job_id = skills_job_dim.job_id
+    INNER JOIN skills_dim ON
+        skills_job_dim.skill_id = skills_dim.skill_id
+    WHERE job_title_short IN ('Data Analyst', 'Business Analyst') AND
+        job_location LIKE '%Thailand%' AND
+        salary_year_avg IS NOT NULL
+    GROUP BY skills_dim.skill_id
+),
+ top_salary AS (
+    SELECT
+        skills_dim.skill_id,
+        ROUND(AVG(salary_year_avg),2) AS avg_salary
+    FROM
+        job_postings_fact
+    INNER JOIN skills_job_dim ON
+        job_postings_fact.job_id = skills_job_dim.job_id
+    INNER JOIN skills_dim ON
+        skills_job_dim.skill_id = skills_dim.skill_id
+    WHERE job_title_short IN ('Data Analyst', 'Business Analyst') AND
+        job_location LIKE '%Thailand%' AND
+        salary_year_avg IS NOT NULL
+    GROUP BY skills_dim.skill_id
+)
+
+-- combine
+-- order by demand then salary
+SELECT 
+    skills_demand.skill_id,
+    skills,
+    num_jobs, 
+    avg_salary
+FROM 
+    skills_demand
+INNER JOIN top_salary ON
+    skills_demand.skill_id = top_salary.skill_id
+ORDER BY 
+        num_jobs DESC,
+        avg_salary DESC
+;
+
+-- rewrite to make it more concise
+SELECT 
+    skills_dim.skill_id,
+    skills_dim.skills,
+    COUNT(job_postings_fact.job_id) AS num_jobs, 
+    ROUND(AVG(salary_year_avg),2) AS avg_salary
+FROM job_postings_fact
+INNER JOIN skills_job_dim ON
+    job_postings_fact.job_id = skills_job_dim.job_id
+INNER JOIN skills_dim ON
+    skills_job_dim.skill_id = skills_dim.skill_id
+WHERE 
+    job_title_short IN ('Data Analyst', 'Business Analyst') AND
+    job_location LIKE '%Thailand%' AND
+    salary_year_avg IS NOT NULL
+GROUP BY skills_dim.skill_id
+ORDER BY num_jobs DESC,
+        avg_salary DESC;
+
+

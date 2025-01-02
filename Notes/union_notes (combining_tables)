@@ -1,0 +1,98 @@
+/*  
+-- union = combine 'result sets' of 2 or more select statements into a 'single result set'
+-- union - remove duplicate rows
+-- union all - include ALL the duplicate rows
+-- has to have THE SAME numbers of columns/ ALL have to match/ All have to have the SAME data type
+-- (ex. Jan table + Feb table + March table, combine rows)
+*/
+
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  january_jobs
+
+UNION -- list EXACT SAME columns
+
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  february_jobs
+
+UNION -- combine another
+
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  march_jobs;
+-- get 143k results
+
+-- UNION ALL to include duplicates (mostly use this)
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  january_jobs
+
+UNION ALL -- list EXACT SAME columns
+
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  february_jobs
+
+UNION ALL -- combine another
+
+SELECT 
+    job_title_short,
+    company_id,
+    job_location
+FROM  march_jobs;
+-- get 220k results
+
+
+-- PRACTICE: get corresponding skills and skill type for each job posting in q1
+-- with salary > 70k
+
+
+SELECT 
+    EXTRACT(QUARTER FROM job_posted_date) as quarter,
+    job_postings_fact.job_id,
+    job_postings_fact.job_title_short,
+    job_postings_fact.salary_year_avg,
+    skills,
+    type
+FROM skills_dim
+INNER JOIN skills_job_dim ON
+    skills_dim.skill_id = skills_job_dim.skill_id
+INNER JOIN job_postings_fact ON
+    skills_job_dim.job_id = job_postings_fact.job_id
+WHERE   
+    EXTRACT(QUARTER FROM job_posted_date) = 1 AND
+    salary_year_avg > 70000
+ORDER BY salary_year_avg asc;
+
+-- use union and subquerries
+SELECT 
+    job_title_short,
+    job_location,
+    job_via,
+    job_posted_date:: DATE AS dates,
+    salary_year_avg
+FROM (  
+    SELECT *
+    FROM january_jobs
+    UNION ALL
+    SELECT *
+    FROM february_jobs
+    UNION ALL
+    SELECT *
+    FROM march_jobs
+) AS quater_1_jobs
+WHERE 
+    salary_year_avg > 70000 AND
+    job_title_short = 'Data Analyst'
+ORDER BY salary_year_avg desc;

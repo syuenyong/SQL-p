@@ -1,0 +1,37 @@
+/*
+QUESTION: what are the top 5 in demand skills for ALL jobs
+- SQL, excel, python, Tableau, Powerbi 
+*/
+
+-- ALL locations
+SELECT
+    skills,
+    COUNT(skills_job_dim.job_id) AS num_jobs
+FROM
+    job_postings_fact
+INNER JOIN skills_job_dim ON
+    job_postings_fact.job_id = skills_job_dim.job_id
+INNER JOIN skills_dim ON
+    skills_job_dim.skill_id = skills_dim.skill_id
+WHERE job_title_short IN ('Data Analyst', 'Business Analyst')
+GROUP BY skills
+ORDER BY num_jobs DESC
+LIMIT 5;
+
+-- compare to jobs in Thailand only
+-- same skills, a bit different order
+-- SQL, excel, Powerbi, python, Tableau  
+SELECT
+    skills,
+    COUNT(skills_job_dim.job_id) AS num_jobs
+FROM
+    job_postings_fact
+INNER JOIN skills_job_dim ON
+    job_postings_fact.job_id = skills_job_dim.job_id
+INNER JOIN skills_dim ON
+    skills_job_dim.skill_id = skills_dim.skill_id
+WHERE job_title_short IN ('Data Analyst', 'Business Analyst') AND
+    job_location LIKE '%Thailand%'
+GROUP BY skills
+ORDER BY num_jobs DESC
+LIMIT 5;

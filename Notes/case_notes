@@ -1,0 +1,56 @@
+-- use case statements
+-- WHEN THEN ELSE
+
+-- Start
+SELECT
+    job_title_short AS title,
+    job_location AS location
+FROM job_postings_fact;
+
+
+/* 3 conditions, a new column:
+'anywhere' = 'remote',
+'New York' = 'local',
+otherwise = 'onsite'
+*/
+
+SELECT
+    job_title_short AS title,
+    job_location AS location,
+    CASE 
+        WHEN job_location = 'anywhere' THEN 'remote'
+        WHEN job_location = 'New York, NY' THEN 'local'
+        ELSE 'onsite'
+    END AS location_category
+FROM job_postings_fact;
+
+-- EXAMPLE how many jobs locally?
+-- use group by
+SELECT
+    COUNT(job_id) AS num_jobs,
+    CASE 
+        WHEN job_location = 'Anywhere' THEN 'remote'
+        WHEN job_location = 'New York, NY' THEN 'local'
+        ELSE 'onsite'
+    END AS location_category
+FROM job_postings_fact
+WHERE job_title_short = 'Data Analyst'
+GROUP BY 
+    location_category
+ORDER BY num_jobs desc;
+
+-- EXAMPLE
+-- categorize salary from each job posting to the desired range
+SELECT
+    job_id,
+    salary_year_avg AS salary,
+    CASE
+        WHEN salary_year_avg < 50000 THEN 'low'
+        WHEN salary_year_avg < 80000 THEN 'standard'
+        WHEN salary_year_avg is NULL THEN 'null'
+        ELSE 'high' 
+    END AS salary_category
+FROM job_postings_fact
+WHERE job_title = 'Data Analyst'
+ORDER BY salary ASC;
+
